@@ -1,0 +1,11 @@
+(-)!ABC + ABC
+├──(A)BC (BDDNode@b1bc7ed)
+│  ├──(-)0 (BDDNode@7cd84586)
+│  └──(B)C (BDDNode@30dae81)
+│     ├──(-)0 (BDDNode@7cd84586)
+│     └──(-)1 (BDDNode@1b2c6ec2)
+└──(A)BC (BDDNode@b1bc7ed)
+   ├──(-)0 (BDDNode@7cd84586)
+   └──(B)C (BDDNode@30dae81)
+      ├──(-)0 (BDDNode@7cd84586)
+      └──(-)1 (BDDNode@1b2c6ec2)
