@@ -237,8 +237,7 @@ public class BDD {
                     node.parent.lowChild = low;
                     node.parent = BDDCreate(node.parent, node.parent.F, order);
                 } else if (hasNeg && hasNoNeg) {
-                    node.lowChild = high;
-                    node.highChild = high;
+                    node.parent.highChild = high;
                     node.parent = BDDCreate(node.parent, node.parent.F, order);
                 } else if (hasNeg) {
                     node.lowChild = high;
@@ -265,9 +264,10 @@ public class BDD {
                     BDDCreate(n, bfunkcia, order);
                 }
                 else {
-                    check.parent = node;
-                    node.lowChild = check;
-                    BDDCreate(node, node.F, order);
+
+                        check.parent = node;
+                        node.lowChild = check;
+                        BDDCreate(node, node.F, order);
                 }
             }
         } else if (node.highChild == null) {
@@ -322,67 +322,86 @@ public class BDD {
                     BDDCreate(n, bfunkcia, order);
                 }
                 else {
-                    check.parent = node;
+                    check.parent = node.parent;
                     node.highChild = check;
-                    BDDCreate(node, node.F, order);
+                    BDDCreate(check, check.F, order);
+
                 }
             }
         } else {
             if (node == root)
                 return node;
+            else if (node.parent == null) {
+                root = node;
+                return node;
+            }
             node.parent = BDDCreate(node.parent, node.parent.F, order);
         }
         return node;
     }
 
-//    //-------------------------------------
-    public String BDD_create_with_best_order(String bfunkcia, String variables) {
-        String[] variableArray = variables.split("");
-        List<String> variableList = Arrays.asList(variableArray);
-        List<String> bestOrder = new ArrayList<>(variableList);
-        int minNodeCount = Integer.MAX_VALUE;
+    //-------------------------------------
+    public BDD BDD_create_with_best_order(String bfunkcia) {
+        Set<Character> variables = extractVariables(bfunkcia);
+        List<Character> orderedVars = new ArrayList<>(variables);
 
-        List<List<String>> permutations = generatePermutations(variableList);
-        for (List<String> order : permutations) {
-            BDD bdd = new BDD();
-            bdd.BDD_create(bfunkcia, Arrays.toString(order.toArray(new String[0])));
-            int nodeCount = count(bdd.root);
+        // Find optimal variable ordering using Quine-McCluskey algorithm
+        List<Character> optimalOrder = findOptimalOrder(bfunkcia, orderedVars);
 
-            if (nodeCount < minNodeCount) {
-                minNodeCount = nodeCount;
-                bestOrder = order;
+        // Create BDD with optimal variable ordering
+        return BDD_create(bfunkcia, optimalOrder.toString());
+    }
+
+    public static Set<Character> extractVariables(String bfunkcia) {
+        Set<Character> variables = new HashSet<>();
+        for (char c : bfunkcia.toCharArray()) {
+            if (Character.isLetter(c)) {
+                variables.add(c);
+            }
+        }
+        return variables;
+    }
+
+    public List<Character> findOptimalOrder(String bfunkcia, List<Character> variables) {
+        List<Character> optimalOrder = new ArrayList<>();
+        int minNodes = Integer.MAX_VALUE;
+
+        // Generate all possible variable orderings
+        List<List<Character>> orders = generateOrderings(variables);
+
+        // Find ordering with minimum number of nodes
+        for (List<Character> order : orders) {
+            BDD bdd = BDD_create(bfunkcia, order.toString());
+            int nodes = bdd.count(root);
+            if (nodes < minNodes) {
+                minNodes = nodes;
+                optimalOrder = order;
             }
         }
 
-        return String.join("", bestOrder);
+        return optimalOrder;
     }
 
-
-    private List<List<String>> generatePermutations(List<String> variables) {
-        List<List<String>> permutations = new ArrayList<>();
-        generatePermutationsHelper(variables, new ArrayList<>(), permutations);
-        return permutations;
-    }
-
-    private void generatePermutationsHelper(List<String> variables, List<String> currentPermutation, List<List<String>> permutations) {
-        if (variables.isEmpty()) {
-            permutations.add(new ArrayList<>(currentPermutation));
-            return;
+    public static List<List<Character>> generateOrderings(List<Character> variables) {
+        if (variables.size() == 1) {
+            return Collections.singletonList(variables);
         }
 
+        List<List<Character>> orderings = new ArrayList<>();
         for (int i = 0; i < variables.size(); i++) {
-            String variable = variables.get(i);
-            currentPermutation.add(variable);
-
-            List<String> newVariables = new ArrayList<>(variables);  // створюємо новий об'єкт типу List
-            newVariables.remove(i);
-
-            generatePermutationsHelper(newVariables, currentPermutation, permutations);
-
-            currentPermutation.remove(currentPermutation.size() - 1);
+            Character variable = variables.get(i);
+            List<Character> remaining = new ArrayList<>(variables);
+            remaining.remove(i);
+            for (List<Character> subOrdering : generateOrderings(remaining)) {
+                List<Character> ordering = new ArrayList<>();
+                ordering.add(variable);
+                ordering.addAll(subOrdering);
+                orderings.add(ordering);
+            }
         }
-    }
 
+        return orderings;
+    }
 
     //---------------------------------
     public static String BDD_use(BDD bdd, String inputs) {
